@@ -58,7 +58,7 @@ export default function EditQuizPage() {
           id: data.id,
           title: data.title,
           description: data.description || '',
-          questions: data.questions.map((q: any) => ({
+          questions: data.questions.map((q: Question) => ({
             id: q.id,
             text: q.text,
             type: q.type,
@@ -101,7 +101,7 @@ export default function EditQuizPage() {
     }));
   };
 
-  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+  const updateQuestion = (index: number, field: keyof Question, value: string | QuestionType | Option[]) => {
     setQuiz(prev => ({
       ...prev,
       questions: prev.questions.map((q, i) => {
@@ -166,7 +166,7 @@ export default function EditQuizPage() {
     }));
   };
 
-  const updateOption = (questionIndex: number, optionIndex: number, field: keyof Option, value: any) => {
+  const updateOption = (questionIndex: number, optionIndex: number, field: keyof Option, value: string | boolean | number) => {
     setQuiz(prev => ({
       ...prev,
       questions: prev.questions.map((q, i) => {

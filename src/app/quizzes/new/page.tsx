@@ -60,7 +60,7 @@ export default function NewQuizPage() {
     }));
   };
 
-  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+  const updateQuestion = (index: number, field: keyof Question, value: string | QuestionType | Option[]) => {
     setQuiz(prev => ({
       ...prev,
       questions: prev.questions.map((q, i) => {
@@ -125,7 +125,7 @@ export default function NewQuizPage() {
     }));
   };
 
-  const updateOption = (questionIndex: number, optionIndex: number, field: keyof Option, value: any) => {
+  const updateOption = (questionIndex: number, optionIndex: number, field: keyof Option, value: string | boolean | number) => {
     setQuiz(prev => ({
       ...prev,
       questions: prev.questions.map((q, i) => {
@@ -213,7 +213,7 @@ export default function NewQuizPage() {
         throw new Error(errorData.error || 'Failed to create quiz');
       }
       
-      const createdQuiz = await response.json();
+      await response.json();
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

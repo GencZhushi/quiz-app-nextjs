@@ -89,7 +89,7 @@ export const userStorePrisma = {
   // Update user
   update: async (id: number, updateData: Partial<CreateUserData>): Promise<User | null> => {
     try {
-      const dataToUpdate: any = {};
+      const dataToUpdate: Partial<{ email: string; name: string; password: string }> = {};
 
       if (updateData.email) {
         dataToUpdate.email = updateData.email.toLowerCase();

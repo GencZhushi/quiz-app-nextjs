@@ -102,7 +102,7 @@ export default function DashboardPage() {
           <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-white/90 mb-2">Welcome to EducHorizon!</h2>
             <p className="text-white/70">
-              You've successfully registered and logged in. Start creating your first quiz or explore our features.
+              You&apos;ve successfully registered and logged in. Start creating your first quiz or explore our features.
             </p>
           </div>
 
