@@ -26,11 +26,12 @@ const UpdateQuizSchema = z.object({
 // GET /api/quizzes/[id] - Get a specific quiz
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const quiz = await prisma.quiz.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         questions: {
           include: {
@@ -63,8 +64,9 @@ export async function GET(
 // PUT /api/quizzes/[id] - Update a specific quiz
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const body = await request.json();
     const validatedData = UpdateQuizSchema.parse(body);
@@ -100,12 +102,12 @@ export async function PUT(
     const updatedQuiz = await prisma.$transaction(async (tx) => {
       // First, delete all existing questions and their options (cascade will handle options)
       await tx.question.deleteMany({
-        where: { quizId: params.id }
+        where: { quizId: id }
       });
 
       // Update the quiz and create new questions
       return await tx.quiz.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           title: validatedData.title,
           description: validatedData.description,
@@ -158,12 +160,13 @@ export async function PUT(
 // DELETE /api/quizzes/[id] - Delete a specific quiz
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // Check if quiz exists
     const existingQuiz = await prisma.quiz.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingQuiz) {
@@ -175,7 +178,7 @@ export async function DELETE(
 
     // Delete the quiz (cascade will handle questions and options)
     await prisma.quiz.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json(
