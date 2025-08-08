@@ -84,7 +84,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-white/90">EducHorizon Dashboard</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-white/80">Welcome, {session.user.name}!</span>
+            <span className="text-white/80">Welcome, {session.user?.name || 'User'}!</span>
             <Button 
               onClick={() => signOut({ callbackUrl: "/" })}
               className="bg-red-500 hover:bg-red-600 text-white"

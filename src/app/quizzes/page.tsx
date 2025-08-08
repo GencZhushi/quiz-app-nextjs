@@ -135,7 +135,7 @@ export default function QuizzesPage() {
             <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 max-w-md mx-auto">
               <h2 className="text-xl font-semibold text-white/90 mb-4">No Quizzes Yet</h2>
               <p className="text-white/70 mb-6">
-                You haven't created any quizzes yet. Start building your first quiz to engage your audience!
+                You haven&apos;t created any quizzes yet. Start building your first quiz to engage your audience!
               </p>
               <Link href="/quizzes/new">
                 <Button className="bg-red-500 hover:bg-red-600 text-white">
