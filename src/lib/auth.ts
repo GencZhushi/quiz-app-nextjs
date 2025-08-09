@@ -1,6 +1,5 @@
 import { getServerSession } from "next-auth/next";
 import { NextRequest } from "next/server";
-import NextAuth from 'next-auth/next';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { userStorePrisma } from '@/lib/userStorePrisma';
 
@@ -75,7 +74,7 @@ export const authOptions = {
  * @param request - The Next.js request object
  * @returns The user ID if authenticated, null otherwise
  */
-export async function getAuthenticatedUserId(request?: NextRequest): Promise<number | null> {
+export async function getAuthenticatedUserId(): Promise<number | null> {
   try {
     const session = await getServerSession(authOptions);
     
@@ -100,7 +99,7 @@ export async function getAuthenticatedUserId(request?: NextRequest): Promise<num
  * @throws Error if user is not authenticated
  */
 export async function requireAuthentication(request?: NextRequest): Promise<number> {
-  const userId = await getAuthenticatedUserId(request);
+  const userId = await getAuthenticatedUserId();
   
   if (!userId) {
     throw new Error('Authentication required');

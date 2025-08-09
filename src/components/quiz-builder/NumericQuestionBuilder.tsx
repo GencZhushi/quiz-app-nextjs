@@ -32,7 +32,7 @@ export function NumericQuestionBuilder({
 }: NumericQuestionBuilderProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const updateQuestion = (field: keyof NumericQuestionData, value: any) => {
+  const updateQuestion = (field: keyof NumericQuestionData, value: string | number | undefined) => {
     const updatedQuestion = { ...question, [field]: value };
     
     // Clear related errors
@@ -49,11 +49,11 @@ export function NumericQuestionBuilder({
         newErrors.maxValue = 'Maximum value must be greater than minimum value';
       }
       
-      if (minVal !== undefined && correctVal < minVal) {
+      if (minVal !== undefined && correctVal !== undefined && correctVal < minVal) {
         newErrors.correctAnswer = 'Correct answer must be within the specified range';
       }
       
-      if (maxVal !== undefined && correctVal > maxVal) {
+      if (maxVal !== undefined && correctVal !== undefined && correctVal > maxVal) {
         newErrors.correctAnswer = 'Correct answer must be within the specified range';
       }
     }
