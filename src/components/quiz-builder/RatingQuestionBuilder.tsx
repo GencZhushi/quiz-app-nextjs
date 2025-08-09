@@ -199,11 +199,11 @@ export default function RatingQuestionBuilder({
           Rating Type *
         </label>
         <div className="grid grid-cols-2 gap-3">
-          {Object.entries(RATING_TYPES).map(([key, config]: [string, any]) => (
+          {Object.entries(RATING_TYPES).map(([key, config]: [string, { name: string; description: string; icon: string; defaultMin: number; defaultMax: number }]) => (
             <button
               key={key}
               type="button"
-              onClick={() => updateRatingType(key as any)}
+              onClick={() => updateRatingType(key as 'stars' | 'numbers' | 'emoji' | 'likert')}
               className={`p-4 rounded-lg border-2 text-left transition-all ${
                 question.ratingType === key
                   ? 'border-blue-400 bg-blue-400/10 text-blue-300'
@@ -305,7 +305,7 @@ export default function RatingQuestionBuilder({
 
       <div className="text-xs text-gray-400 p-3 bg-gray-800/50 rounded-md">
         💡 <strong>Rating Questions:</strong> Perfect for surveys, feedback, satisfaction ratings, and opinion scales. 
-        Students can provide quantitative feedback that's easy to analyze.
+        Students can provide quantitative feedback that&apos;s easy to analyze.
       </div>
     </div>
   );
