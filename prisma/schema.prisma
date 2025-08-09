@@ -62,6 +62,11 @@ model Question {
   ratingMax       Int?       @default(5) @map("rating_max")     // Maximum rating value
   ratingLabels    String?    @map("rating_labels")              // JSON array of custom labels
   ratingType      String?    @default("stars") @map("rating_type") // Type: stars, numbers, emoji, etc.
+  
+  // Dropdown question fields
+  placeholder       String?  @default("Select an option...") // Placeholder text for dropdown
+  allowSearch       Boolean? @default(false) @map("allow_search") // Enable search functionality
+  showOptionNumbers Boolean? @default(false) @map("show_option_numbers") // Show numbers before options
 }
 
 model Option {
@@ -80,4 +85,5 @@ enum QuestionType {
   NUMERIC
   SEQUENCE
   RATING
+  DROPDOWN
 }

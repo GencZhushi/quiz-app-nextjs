@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import RatingQuestionBuilder from '@/components/quiz-builder/RatingQuestionBuilder';
+import DropdownQuestionBuilder from '@/components/quiz-builder/DropdownQuestionBuilder';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
-type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TEXT' | 'NUMERIC' | 'SEQUENCE' | 'RATING';
+type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TEXT' | 'NUMERIC' | 'SEQUENCE' | 'RATING' | 'DROPDOWN';
 
 interface Option {
   text: string;
@@ -34,6 +35,10 @@ interface Question {
   ratingMax?: number;
   ratingLabels?: string[];
   ratingType?: 'stars' | 'numbers' | 'emoji' | 'likert';
+  // Dropdown question fields
+  placeholder?: string;
+  allowSearch?: boolean;
+  showOptionNumbers?: boolean;
 }
 
 interface Quiz {
@@ -112,6 +117,15 @@ export default function NewQuizPage() {
               updated.ratingMax = 5;
               updated.ratingType = 'stars';
               updated.ratingLabels = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+            } else if (value === 'DROPDOWN' && q.type !== 'DROPDOWN') {
+              updated.options = [
+                { text: 'Option 1', isCorrect: true, orderIndex: 0 },
+                { text: 'Option 2', isCorrect: false, orderIndex: 1 },
+                { text: 'Option 3', isCorrect: false, orderIndex: 2 }
+              ];
+              updated.placeholder = 'Select an option...';
+              updated.allowSearch = false;
+              updated.showOptionNumbers = false;
             }
             
             // Set default numeric values when switching to NUMERIC
@@ -381,6 +395,7 @@ export default function NewQuizPage() {
                     <option value="NUMERIC">Numeric Input</option>
                     <option value="SEQUENCE">Sequence Ordering</option>
                     <option value="RATING">Rating Scale</option>
+                    <option value="DROPDOWN">Dropdown Select</option>
                   </select>
                 </div>
 
@@ -622,6 +637,31 @@ export default function NewQuizPage() {
                       ratingMax: question.ratingMax || 5,
                       ratingLabels: question.ratingLabels || ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
                       ratingType: question.ratingType || 'stars'
+                    }}
+                    onChange={(updatedQuestion) => {
+                      setQuiz(prev => ({
+                        ...prev,
+                        questions: prev.questions.map((q, i) => 
+                          i === qIndex ? { ...q, ...updatedQuestion } : q
+                        )
+                      }));
+                    }}
+                    onRemove={() => removeQuestion(qIndex)}
+                    questionIndex={qIndex}
+                  />
+                )}
+
+                {/* Dropdown question fields */}
+                {question.type === 'DROPDOWN' && (
+                  <DropdownQuestionBuilder
+                    question={{
+                      text: question.text,
+                      type: 'DROPDOWN' as const,
+                      orderIndex: question.orderIndex,
+                      options: question.options || [],
+                      placeholder: question.placeholder || 'Select an option...',
+                      allowSearch: question.allowSearch || false,
+                      showOptionNumbers: question.showOptionNumbers || false
                     }}
                     onChange={(updatedQuestion) => {
                       setQuiz(prev => ({

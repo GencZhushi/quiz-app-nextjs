@@ -12,7 +12,7 @@ const OptionSchema = z.object({
 
 const QuestionSchema = z.object({
   text: z.string().min(1, 'Question text is required'),
-  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT', 'NUMERIC', 'SEQUENCE', 'RATING']),
+  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT', 'NUMERIC', 'SEQUENCE', 'RATING', 'DROPDOWN']),
   orderIndex: z.number().int().min(0),
   options: z.array(OptionSchema).optional(),
   // Numeric question fields
@@ -29,6 +29,10 @@ const QuestionSchema = z.object({
   ratingMax: z.number().int().min(2).max(10).optional(),
   ratingLabels: z.array(z.string()).optional(),
   ratingType: z.enum(['stars', 'numbers', 'emoji', 'likert']).optional(),
+  // Dropdown question fields
+  placeholder: z.string().optional(),
+  allowSearch: z.boolean().optional(),
+  showOptionNumbers: z.boolean().optional(),
 });
 
 const QuizSchema = z.object({
@@ -49,7 +53,7 @@ export async function POST(request: NextRequest) {
     
     // Additional validation for choice questions
     for (const question of validatedData.questions) {
-      if (question.type === 'SINGLE' || question.type === 'MULTIPLE') {
+      if (question.type === 'SINGLE' || question.type === 'MULTIPLE' || question.type === 'DROPDOWN') {
         if (!question.options || question.options.length < 2) {
           return NextResponse.json(
             { error: `${question.type} choice questions must have at least 2 options` },
@@ -68,6 +72,13 @@ export async function POST(request: NextRequest) {
         if (question.type === 'MULTIPLE' && correctOptions.length === 0) {
           return NextResponse.json(
             { error: 'Multiple choice questions must have at least one correct option' },
+            { status: 400 }
+          );
+        }
+
+        if (question.type === 'DROPDOWN' && correctOptions.length !== 1) {
+          return NextResponse.json(
+            { error: 'Dropdown questions must have exactly one correct option' },
             { status: 400 }
           );
         }
@@ -177,6 +188,10 @@ export async function POST(request: NextRequest) {
             ratingMax: question.ratingMax,
             ratingLabels: question.ratingLabels ? JSON.stringify(question.ratingLabels) : null,
             ratingType: question.ratingType,
+            // Dropdown question fields
+            placeholder: question.placeholder,
+            allowSearch: question.allowSearch,
+            showOptionNumbers: question.showOptionNumbers,
             // Options for choice questions
             options: question.options ? {
               create: question.options.map(option => ({

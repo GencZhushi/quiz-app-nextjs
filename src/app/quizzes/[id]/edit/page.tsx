@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
-type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TEXT';
+type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TEXT' | 'NUMERIC' | 'SEQUENCE' | 'RATING' | 'DROPDOWN';
 
 interface Option {
   id?: string;
@@ -22,6 +22,28 @@ interface Question {
   type: QuestionType;
   orderIndex: number;
   options: Option[];
+  
+  // Numeric question fields
+  minValue?: number;
+  maxValue?: number;
+  decimalPlaces?: number;
+  unit?: string;
+  correctAnswer?: number;
+  tolerance?: number;
+  
+  // Sequence question fields
+  correctSequence?: string;
+  
+  // Rating question fields
+  ratingMin?: number;
+  ratingMax?: number;
+  ratingLabels?: string;
+  ratingType?: string;
+  
+  // Dropdown question fields
+  placeholder?: string;
+  allowSearch?: boolean;
+  showOptionNumbers?: boolean;
 }
 
 interface Quiz {
@@ -101,16 +123,16 @@ export default function EditQuizPage() {
     }));
   };
 
-  const updateQuestion = (index: number, field: keyof Question, value: string | QuestionType | Option[]) => {
+  const updateQuestion = (index: number, field: keyof Question, value: string | QuestionType | Option[] | number | boolean) => {
     setQuiz(prev => ({
       ...prev,
       questions: prev.questions.map((q, i) => {
         if (i === index) {
           const updated = { ...q, [field]: value };
           
-          // Reset options when changing question type
+          // Reset options and set defaults when changing question type
           if (field === 'type') {
-            if (value === 'TEXT') {
+            if (value === 'TEXT' || value === 'NUMERIC' || value === 'RATING') {
               updated.options = [];
             } else if (value === 'SINGLE' && q.type !== 'SINGLE') {
               updated.options = [
@@ -122,6 +144,34 @@ export default function EditQuizPage() {
                 { text: '', isCorrect: true, orderIndex: 0 },
                 { text: '', isCorrect: false, orderIndex: 1 }
               ];
+            } else if (value === 'SEQUENCE' && q.type !== 'SEQUENCE') {
+              updated.options = [
+                { text: '', isCorrect: false, orderIndex: 0 },
+                { text: '', isCorrect: false, orderIndex: 1 },
+                { text: '', isCorrect: false, orderIndex: 2 }
+              ];
+            } else if (value === 'DROPDOWN' && q.type !== 'DROPDOWN') {
+              updated.options = [
+                { text: '', isCorrect: false, orderIndex: 0 },
+                { text: '', isCorrect: true, orderIndex: 1 },
+                { text: '', isCorrect: false, orderIndex: 2 }
+              ];
+            }
+            
+            // Set type-specific defaults
+            if (value === 'NUMERIC') {
+              updated.minValue = 0;
+              updated.maxValue = 100;
+              updated.decimalPlaces = 2;
+              updated.tolerance = 0;
+            } else if (value === 'RATING') {
+              updated.ratingMin = 1;
+              updated.ratingMax = 5;
+              updated.ratingType = 'stars';
+            } else if (value === 'DROPDOWN') {
+              updated.placeholder = 'Select an option...';
+              updated.allowSearch = false;
+              updated.showOptionNumbers = false;
             }
           }
           
@@ -368,18 +418,22 @@ export default function EditQuizPage() {
                   <div>
                     <label className="block text-sm font-medium text-white/70 mb-2">Question Type</label>
                     <select
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
                       value={question.type}
                       onChange={(e) => updateQuestion(qIndex, 'type', e.target.value as QuestionType)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="SINGLE">Single Choice</option>
                       <option value="MULTIPLE">Multiple Choice</option>
                       <option value="TEXT">Text Answer</option>
+                      <option value="NUMERIC">Numeric Input</option>
+                      <option value="SEQUENCE">Sequence Ordering</option>
+                      <option value="RATING">Rating Scale</option>
+                      <option value="DROPDOWN">Dropdown Select</option>
                     </select>
                   </div>
 
                   {/* Options for choice questions */}
-                  {(question.type === 'SINGLE' || question.type === 'MULTIPLE') && (
+                  {(question.type === 'SINGLE' || question.type === 'MULTIPLE' || question.type === 'SEQUENCE' || question.type === 'DROPDOWN') && (
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <label className="block text-sm font-medium text-white/70">Options</label>
@@ -398,11 +452,27 @@ export default function EditQuizPage() {
                         {question.options.map((option, oIndex) => (
                           <div key={oIndex} className="flex items-center gap-2">
                             <input
-                              type={question.type === 'SINGLE' ? 'radio' : 'checkbox'}
+                              type={
+                                question.type === 'SINGLE' || question.type === 'DROPDOWN' 
+                                  ? 'radio' 
+                                  : question.type === 'SEQUENCE' 
+                                    ? 'number'
+                                    : 'checkbox'
+                              }
                               name={`question-${qIndex}-correct`}
-                              checked={option.isCorrect}
-                              onChange={(e) => updateOption(qIndex, oIndex, 'isCorrect', e.target.checked)}
+                              checked={question.type !== 'SEQUENCE' ? option.isCorrect : false}
+                              value={question.type === 'SEQUENCE' ? option.orderIndex + 1 : undefined}
+                              onChange={(e) => {
+                                if (question.type === 'SEQUENCE') {
+                                  updateOption(qIndex, oIndex, 'orderIndex', parseInt(e.target.value) - 1);
+                                } else {
+                                  updateOption(qIndex, oIndex, 'isCorrect', e.target.checked);
+                                }
+                              }}
+                              placeholder={question.type === 'SEQUENCE' ? 'Order' : undefined}
                               className="flex-shrink-0"
+                              min={question.type === 'SEQUENCE' ? '1' : undefined}
+                              max={question.type === 'SEQUENCE' ? question.options.length.toString() : undefined}
                             />
                             <Input
                               type="text"
@@ -424,6 +494,131 @@ export default function EditQuizPage() {
                             )}
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Numeric question configuration */}
+                  {question.type === 'NUMERIC' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Correct Answer *</label>
+                        <Input
+                          type="number"
+                          value={question.correctAnswer || ''}
+                          onChange={(e) => updateQuestion(qIndex, 'correctAnswer', parseFloat(e.target.value))}
+                          placeholder="Enter correct answer"
+                          className="bg-gray-700 border-gray-600 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Tolerance</label>
+                        <Input
+                          type="number"
+                          value={question.tolerance || 0}
+                          onChange={(e) => updateQuestion(qIndex, 'tolerance', parseFloat(e.target.value))}
+                          placeholder="0"
+                          className="bg-gray-700 border-gray-600 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Unit</label>
+                        <Input
+                          type="text"
+                          value={question.unit || ''}
+                          onChange={(e) => updateQuestion(qIndex, 'unit', e.target.value)}
+                          placeholder="e.g., kg, m/s, °C"
+                          className="bg-gray-700 border-gray-600 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Decimal Places</label>
+                        <Input
+                          type="number"
+                          value={question.decimalPlaces || 2}
+                          onChange={(e) => updateQuestion(qIndex, 'decimalPlaces', parseInt(e.target.value))}
+                          min="0"
+                          max="10"
+                          className="bg-gray-700 border-gray-600 text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rating question configuration */}
+                  {question.type === 'RATING' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Rating Type</label>
+                        <select
+                          value={question.ratingType || 'stars'}
+                          onChange={(e) => updateQuestion(qIndex, 'ratingType', e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="stars">⭐ Stars</option>
+                          <option value="numbers">🔢 Numbers</option>
+                          <option value="emoji">😊 Emoji</option>
+                          <option value="likert">📊 Likert Scale</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Scale Range</label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            value={question.ratingMin || 1}
+                            onChange={(e) => updateQuestion(qIndex, 'ratingMin', parseInt(e.target.value))}
+                            placeholder="Min"
+                            min="1"
+                            max="10"
+                            className="bg-gray-700 border-gray-600 text-white"
+                          />
+                          <span className="text-white/70 self-center">to</span>
+                          <Input
+                            type="number"
+                            value={question.ratingMax || 5}
+                            onChange={(e) => updateQuestion(qIndex, 'ratingMax', parseInt(e.target.value))}
+                            placeholder="Max"
+                            min="2"
+                            max="10"
+                            className="bg-gray-700 border-gray-600 text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dropdown question configuration */}
+                  {question.type === 'DROPDOWN' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Placeholder Text</label>
+                        <Input
+                          type="text"
+                          value={question.placeholder || 'Select an option...'}
+                          onChange={(e) => updateQuestion(qIndex, 'placeholder', e.target.value)}
+                          className="bg-gray-700 border-gray-600 text-white"
+                        />
+                      </div>
+                      <div className="flex gap-4">
+                        <label className="flex items-center text-white/70">
+                          <input
+                            type="checkbox"
+                            checked={question.allowSearch || false}
+                            onChange={(e) => updateQuestion(qIndex, 'allowSearch', e.target.checked)}
+                            className="mr-2"
+                          />
+                          Enable Search
+                        </label>
+                        <label className="flex items-center text-white/70">
+                          <input
+                            type="checkbox"
+                            checked={question.showOptionNumbers || false}
+                            onChange={(e) => updateQuestion(qIndex, 'showOptionNumbers', e.target.checked)}
+                            className="mr-2"
+                          />
+                          Show Option Numbers
+                        </label>
                       </div>
                     </div>
                   )}

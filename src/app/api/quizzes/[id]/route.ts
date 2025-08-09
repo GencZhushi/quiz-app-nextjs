@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { QuestionType } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuthentication, userOwnsQuiz } from '@/lib/auth';
 
@@ -13,9 +14,27 @@ const OptionSchema = z.object({
 const QuestionSchema = z.object({
   id: z.string().optional(),
   text: z.string().min(1, 'Question text is required'),
-  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT']),
+  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT', 'NUMERIC', 'SEQUENCE', 'RATING', 'DROPDOWN']),
   orderIndex: z.number().int().min(0),
   options: z.array(OptionSchema).optional(),
+  // Numeric question fields
+  minValue: z.number().optional(),
+  maxValue: z.number().optional(),
+  decimalPlaces: z.number().int().min(0).max(10).default(2).optional(),
+  unit: z.string().optional(),
+  correctAnswer: z.number().optional(),
+  tolerance: z.number().min(0).default(0).optional(),
+  // Sequence question fields
+  correctSequence: z.string().optional(), // JSON string in database
+  // Rating question fields
+  ratingMin: z.number().int().min(1).max(10).optional(),
+  ratingMax: z.number().int().min(2).max(10).optional(),
+  ratingLabels: z.string().optional(), // JSON string in database
+  ratingType: z.enum(['stars', 'numbers', 'emoji', 'likert']).optional(),
+  // Dropdown question fields
+  placeholder: z.string().optional(),
+  allowSearch: z.boolean().optional(),
+  showOptionNumbers: z.boolean().optional(),
 });
 
 const UpdateQuizSchema = z.object({
@@ -148,8 +167,26 @@ export async function PUT(
           questions: {
             create: validatedData.questions.map(question => ({
               text: question.text,
-              type: question.type,
+              type: question.type as QuestionType,
               orderIndex: question.orderIndex,
+              // Numeric question fields
+              minValue: question.minValue,
+              maxValue: question.maxValue,
+              decimalPlaces: question.decimalPlaces,
+              unit: question.unit,
+              correctAnswer: question.correctAnswer,
+              tolerance: question.tolerance,
+              // Sequence question fields
+              correctSequence: question.correctSequence,
+              // Rating question fields
+              ratingMin: question.ratingMin,
+              ratingMax: question.ratingMax,
+              ratingLabels: question.ratingLabels,
+              ratingType: question.ratingType,
+              // Dropdown question fields
+              placeholder: question.placeholder,
+              allowSearch: question.allowSearch,
+              showOptionNumbers: question.showOptionNumbers,
               options: question.options ? {
                 create: question.options.map(option => ({
                   text: option.text,
