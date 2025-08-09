@@ -21,6 +21,7 @@ model User {
   name      String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  quizzes   Quiz[]   // One-to-many relationship: User can have many quizzes
 
   @@map("users")
 }
@@ -31,6 +32,8 @@ model Quiz {
   description String?    @db.Text
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  userId      Int        // Foreign key to User
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions   Question[]
 }
 

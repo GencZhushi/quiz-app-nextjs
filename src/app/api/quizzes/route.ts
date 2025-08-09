@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { requireAuthentication } from '@/lib/auth';
 
 const OptionSchema = z.object({
   text: z.string().min(1, 'Option text is required'),
@@ -23,6 +24,9 @@ const QuizSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication and get user ID
+    const userId = await requireAuthentication();
+    
     const body = await request.json();
     
     // Validate the request body
@@ -60,6 +64,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: validatedData.title,
         description: validatedData.description,
+        user: { connect: { id: userId } }, // Associate quiz with authenticated user via relation connect
         questions: {
           create: validatedData.questions.map(question => ({
             text: question.text,
@@ -91,6 +96,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating quiz:', error);
     
+    // Handle authentication errors specifically
+    if (error instanceof Error && error.message === 'Authentication required') {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.issues },
@@ -107,7 +120,14 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    // Require authentication and get user ID
+    const userId = await requireAuthentication();
+    
+    // Get quizzes for the authenticated user only
     const quizzes = await prisma.quiz.findMany({
+      where: {
+        user: { is: { id: userId } }
+      },
       include: {
         questions: {
           include: {
@@ -126,6 +146,15 @@ export async function GET() {
     return NextResponse.json(quizzes);
   } catch (error) {
     console.error('Error fetching quizzes:', error);
+    
+    // Handle authentication errors specifically
+    if (error instanceof Error && error.message === 'Authentication required') {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

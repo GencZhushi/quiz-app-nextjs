@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { requireAuthentication, userOwnsQuiz } from '@/lib/auth';
 
 const OptionSchema = z.object({
   id: z.string().optional(),
@@ -30,6 +31,18 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
+    // Require authentication and get user ID
+    const userId = await requireAuthentication();
+    
+    // Verify user owns this quiz
+    const ownsQuiz = await userOwnsQuiz(userId, id);
+    if (!ownsQuiz) {
+      return NextResponse.json(
+        { error: 'Quiz not found or access denied' },
+        { status: 404 }
+      );
+    }
+
     const quiz = await prisma.quiz.findUnique({
       where: { id },
       include: {
@@ -54,6 +67,15 @@ export async function GET(
     return NextResponse.json(quiz);
   } catch (error) {
     console.error('Error fetching quiz:', error);
+    
+    // Handle authentication errors specifically
+    if (error instanceof Error && error.message === 'Authentication required') {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -68,6 +90,18 @@ export async function PUT(
 ) {
   const { id } = await params;
   try {
+    // Require authentication and get user ID
+    const userId = await requireAuthentication();
+    
+    // Verify user owns this quiz
+    const ownsQuiz = await userOwnsQuiz(userId, id);
+    if (!ownsQuiz) {
+      return NextResponse.json(
+        { error: 'Quiz not found or access denied' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
     const validatedData = UpdateQuizSchema.parse(body);
 
@@ -164,14 +198,14 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    // Check if quiz exists
-    const existingQuiz = await prisma.quiz.findUnique({
-      where: { id }
-    });
-
-    if (!existingQuiz) {
+    // Require authentication and get user ID
+    const userId = await requireAuthentication();
+    
+    // Verify user owns this quiz
+    const ownsQuiz = await userOwnsQuiz(userId, id);
+    if (!ownsQuiz) {
       return NextResponse.json(
-        { error: 'Quiz not found' },
+        { error: 'Quiz not found or access denied' },
         { status: 404 }
       );
     }
