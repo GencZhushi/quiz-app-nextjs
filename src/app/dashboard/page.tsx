@@ -1,10 +1,13 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { DashboardSkeleton, DashboardStatsSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { PageLoadingSkeleton } from "@/components/skeletons/PageSkeleton";
 
 interface DashboardStats {
   quizzesCreated: number;
@@ -64,11 +67,7 @@ export default function DashboardPage() {
   }, [session]);
 
   if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-800 via-gray-900 to-gray-950">
-        <div className="text-white/90">Loading...</div>
-      </div>
-    );
+    return <PageLoadingSkeleton />;
   }
 
   if (!session) {
@@ -113,19 +112,31 @@ export default function DashboardPage() {
               <div className="flex justify-between">
                 <span className="text-white/70">Quizzes Created:</span>
                 <span className="text-white/90">
-                  {isLoadingStats ? "..." : stats.quizzesCreated}
+                  {isLoadingStats ? (
+                    <div className="animate-pulse bg-gray-700/50 h-6 w-8 rounded"></div>
+                  ) : (
+                    stats.quizzesCreated
+                  )}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-white/70">Students Enrolled:</span>
                 <span className="text-white/90">
-                  {isLoadingStats ? "..." : stats.studentsEnrolled}
+                  {isLoadingStats ? (
+                    <div className="animate-pulse bg-gray-700/50 h-6 w-8 rounded"></div>
+                  ) : (
+                    stats.studentsEnrolled
+                  )}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-white/70">Total Questions:</span>
                 <span className="text-white/90">
-                  {isLoadingStats ? "..." : stats.totalQuestions}
+                  {isLoadingStats ? (
+                    <div className="animate-pulse bg-gray-700/50 h-6 w-8 rounded"></div>
+                  ) : (
+                    stats.totalQuestions
+                  )}
                 </span>
               </div>
             </div>

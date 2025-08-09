@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
+import { FormButtonSkeleton } from "@/components/skeletons/FormSkeleton";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -171,7 +174,14 @@ export default function RegisterPage() {
             disabled={isLoading}
             className="w-full bg-red-500 hover:bg-red-600 text-white py-3"
           >
-            {isLoading ? "Creating Account..." : "Create Account"}
+            {isLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Creating Account...</span>
+              </div>
+            ) : (
+              "Create Account"
+            )}
           </Button>
 
           <div className="text-center">
