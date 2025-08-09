@@ -199,7 +199,7 @@ export default function RatingQuestionBuilder({
           Rating Type *
         </label>
         <div className="grid grid-cols-2 gap-3">
-          {Object.entries(RATING_TYPES).map(([key, config]) => (
+          {Object.entries(RATING_TYPES).map(([key, config]: [string, any]) => (
             <button
               key={key}
               type="button"

@@ -61,7 +61,7 @@ export function validateSequenceAnswer(
     }
     
     return { isValid: true };
-  } catch (error) {
+  } catch {
     return {
       isValid: false,
       error: 'Invalid answer format'

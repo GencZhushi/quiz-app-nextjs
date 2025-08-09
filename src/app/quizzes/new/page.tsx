@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import NumericQuestionBuilder from '@/components/quiz-builder/NumericQuestionBuilder';
-import SequenceQuestionBuilder from '@/components/quiz-builder/SequenceQuestionBuilder';
 import RatingQuestionBuilder from '@/components/quiz-builder/RatingQuestionBuilder';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -616,7 +614,15 @@ export default function NewQuizPage() {
                 {/* Rating question fields */}
                 {question.type === 'RATING' && (
                   <RatingQuestionBuilder
-                    question={question as any}
+                    question={{
+                      text: question.text,
+                      type: 'RATING' as const,
+                      orderIndex: question.orderIndex,
+                      ratingMin: question.ratingMin || 1,
+                      ratingMax: question.ratingMax || 5,
+                      ratingLabels: question.ratingLabels || ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+                      ratingType: question.ratingType || 'stars'
+                    }}
                     onChange={(updatedQuestion) => {
                       setQuiz(prev => ({
                         ...prev,
