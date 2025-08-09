@@ -38,13 +38,21 @@ model Quiz {
 }
 
 model Question {
-  id          String       @id @default(cuid())
-  quizId      String
-  text        String
-  type        QuestionType
-  orderIndex  Int          @default(0)
-  options     Option[]
-  quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  id            String       @id @default(cuid())
+  quizId        String
+  text          String
+  type          QuestionType
+  orderIndex    Int          @default(0)
+  options       Option[]
+  quiz          Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  // Numeric question fields
+  minValue      Float?       @map("min_value")
+  maxValue      Float?       @map("max_value")
+  decimalPlaces Int?         @default(2) @map("decimal_places")
+  unit          String?
+  correctAnswer Float?       @map("correct_answer")
+  tolerance     Float?       @default(0)
 }
 
 model Option {
@@ -60,4 +68,5 @@ enum QuestionType {
   SINGLE
   MULTIPLE
   TEXT
+  NUMERIC
 }

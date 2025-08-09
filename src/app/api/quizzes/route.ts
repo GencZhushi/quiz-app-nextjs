@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { QuestionType } from '@prisma/client';
 import { z } from 'zod';
 import { requireAuthentication } from '@/lib/auth';
 
@@ -11,9 +12,16 @@ const OptionSchema = z.object({
 
 const QuestionSchema = z.object({
   text: z.string().min(1, 'Question text is required'),
-  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT']),
+  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT', 'NUMERIC']),
   orderIndex: z.number().int().min(0),
   options: z.array(OptionSchema).optional(),
+  // Numeric question fields
+  minValue: z.number().optional(),
+  maxValue: z.number().optional(),
+  decimalPlaces: z.number().int().min(0).max(10).default(2).optional(),
+  unit: z.string().optional(),
+  correctAnswer: z.number().optional(),
+  tolerance: z.number().min(0).default(0).optional(),
 });
 
 const QuizSchema = z.object({
@@ -57,6 +65,32 @@ export async function POST(request: NextRequest) {
           );
         }
       }
+      
+      // Additional validation for numeric questions
+      if (question.type === 'NUMERIC') {
+        if (question.correctAnswer === undefined) {
+          return NextResponse.json(
+            { error: 'Numeric questions must have a correct answer' },
+            { status: 400 }
+          );
+        }
+        
+        if (question.minValue !== undefined && question.maxValue !== undefined) {
+          if (question.minValue > question.maxValue) {
+            return NextResponse.json(
+              { error: 'Minimum value must be less than or equal to maximum value' },
+              { status: 400 }
+            );
+          }
+          
+          if (question.correctAnswer < question.minValue || question.correctAnswer > question.maxValue) {
+            return NextResponse.json(
+              { error: 'Correct answer must be within the specified range' },
+              { status: 400 }
+            );
+          }
+        }
+      }
     }
 
     // Create quiz with nested questions and options in a transaction
@@ -68,8 +102,16 @@ export async function POST(request: NextRequest) {
         questions: {
           create: validatedData.questions.map(question => ({
             text: question.text,
-            type: question.type,
+            type: question.type as QuestionType,
             orderIndex: question.orderIndex,
+            // Numeric question fields
+            minValue: question.minValue,
+            maxValue: question.maxValue,
+            decimalPlaces: question.decimalPlaces,
+            unit: question.unit,
+            correctAnswer: question.correctAnswer,
+            tolerance: question.tolerance,
+            // Options for choice questions
             options: question.options ? {
               create: question.options.map(option => ({
                 text: option.text,
