@@ -12,7 +12,7 @@ const OptionSchema = z.object({
 
 const QuestionSchema = z.object({
   text: z.string().min(1, 'Question text is required'),
-  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT', 'NUMERIC']),
+  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT', 'NUMERIC', 'SEQUENCE']),
   orderIndex: z.number().int().min(0),
   options: z.array(OptionSchema).optional(),
   // Numeric question fields
@@ -22,6 +22,8 @@ const QuestionSchema = z.object({
   unit: z.string().optional(),
   correctAnswer: z.number().optional(),
   tolerance: z.number().min(0).default(0).optional(),
+  // Sequence question fields
+  correctSequence: z.array(z.string()).optional(),
 });
 
 const QuizSchema = z.object({
@@ -65,7 +67,35 @@ export async function POST(request: NextRequest) {
           );
         }
       }
-      
+
+      // Additional validation for sequence questions
+      if (question.type === 'SEQUENCE') {
+        if (!question.options || question.options.length < 2) {
+          return NextResponse.json(
+            { error: 'Sequence questions must have at least 2 items to order' },
+            { status: 400 }
+          );
+        }
+
+        if (!question.correctSequence || question.correctSequence.length !== question.options.length) {
+          return NextResponse.json(
+            { error: 'Sequence questions must have a correct sequence matching all options' },
+            { status: 400 }
+          );
+        }
+
+        // Validate that all option IDs in correctSequence exist in options
+        const optionIds = new Set(question.options.map(opt => opt.text)); // Using text as ID for validation
+        const sequenceIds = new Set(question.correctSequence);
+        
+        if (optionIds.size !== sequenceIds.size) {
+          return NextResponse.json(
+            { error: 'Sequence question correct sequence must match all option IDs' },
+            { status: 400 }
+          );
+        }
+      }
+
       // Additional validation for numeric questions
       if (question.type === 'NUMERIC') {
         if (question.correctAnswer === undefined) {
@@ -111,6 +141,8 @@ export async function POST(request: NextRequest) {
             unit: question.unit,
             correctAnswer: question.correctAnswer,
             tolerance: question.tolerance,
+            // Sequence question fields
+            correctSequence: question.correctSequence ? JSON.stringify(question.correctSequence) : null,
             // Options for choice questions
             options: question.options ? {
               create: question.options.map(option => ({

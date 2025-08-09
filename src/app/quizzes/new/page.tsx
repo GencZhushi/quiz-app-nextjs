@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
-type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TEXT' | 'NUMERIC';
+type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TEXT' | 'NUMERIC' | 'SEQUENCE';
 
 interface Option {
   text: string;
@@ -26,6 +26,8 @@ interface Question {
   unit?: string;
   correctAnswer?: number;
   tolerance?: number;
+  // Sequence question fields
+  correctSequence?: string[];
 }
 
 interface Quiz {
@@ -55,7 +57,9 @@ export default function NewQuizPage() {
       ],
       // Default numeric fields
       decimalPlaces: 2,
-      tolerance: 0
+      tolerance: 0,
+      // Default sequence fields
+      correctSequence: []
     };
     setQuiz(prev => ({
       ...prev,
@@ -70,7 +74,7 @@ export default function NewQuizPage() {
     }));
   };
 
-  const updateQuestion = (index: number, field: keyof Question, value: string | QuestionType | Option[] | number | undefined) => {
+  const updateQuestion = (index: number, field: keyof Question, value: string | QuestionType | Option[] | number | undefined | string[]) => {
     setQuiz(prev => ({
       ...prev,
       questions: prev.questions.map((q, i) => {
@@ -91,6 +95,13 @@ export default function NewQuizPage() {
                 { text: '', isCorrect: true, orderIndex: 0 },
                 { text: '', isCorrect: false, orderIndex: 1 }
               ];
+            } else if (value === 'SEQUENCE' && q.type !== 'SEQUENCE') {
+              updated.options = [
+                { text: '', isCorrect: false, orderIndex: 0 },
+                { text: '', isCorrect: false, orderIndex: 1 },
+                { text: '', isCorrect: false, orderIndex: 2 }
+              ];
+              updated.correctSequence = [];
             }
             
             // Set default numeric values when switching to NUMERIC
@@ -223,6 +234,18 @@ export default function NewQuizPage() {
           return `Question ${i + 1}: Tolerance must be non-negative`;
         }
       }
+
+      // Validate sequence questions
+      if (question.type === 'SEQUENCE') {
+        if (question.options.length < 2) {
+          return `Question ${i + 1}: Sequence questions must have at least 2 items to order`;
+        }
+
+        const hasEmptyItems = question.options.some(opt => !opt.text.trim());
+        if (hasEmptyItems) {
+          return `Question ${i + 1}: All sequence items must have text`;
+        }
+      }
     }
 
     return null;
@@ -344,6 +367,7 @@ export default function NewQuizPage() {
                     <option value="MULTIPLE">Multiple Choice</option>
                     <option value="TEXT">Text Answer</option>
                     <option value="NUMERIC">Numeric Input</option>
+                    <option value="SEQUENCE">Sequence Ordering</option>
                   </select>
                 </div>
 
@@ -431,6 +455,145 @@ export default function NewQuizPage() {
                       <p className="text-xs text-gray-400 mt-1">
                         Acceptable margin of error for the answer
                       </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sequence question fields */}
+                {question.type === 'SEQUENCE' && (
+                  <div className="space-y-4 p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
+                    <h4 className="font-medium text-white/90">Sequence Ordering Settings</h4>
+                    
+                    <div className="text-sm text-white/70">
+                      Add items that students will arrange in the correct order. You can set the correct sequence below.
+                    </div>
+                    
+                    {/* Sequence Items */}
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-white/70">Sequence Items *</label>
+                      {question.options.map((option, optIndex) => (
+                        <div key={optIndex} className="flex items-center space-x-3">
+                          <div className="flex-shrink-0 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white/80 text-sm font-medium">
+                            {optIndex + 1}
+                          </div>
+                          <Input
+                            type="text"
+                            value={option.text}
+                            onChange={(e) => {
+                              const updatedOptions = [...question.options];
+                              updatedOptions[optIndex] = { ...option, text: e.target.value };
+                              updateQuestion(qIndex, 'options', updatedOptions);
+                            }}
+                            placeholder={`Item ${optIndex + 1}`}
+                            className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              const updatedOptions = question.options.filter((_, i) => i !== optIndex);
+                              updateQuestion(qIndex, 'options', updatedOptions);
+                            }}
+                            disabled={question.options.length <= 2}
+                            className="text-red-400 border-red-400/50 hover:bg-red-400/10 disabled:opacity-50"
+                            variant="outline"
+                            size="sm"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const newOption = {
+                            text: '',
+                            isCorrect: false,
+                            orderIndex: question.options.length
+                          };
+                          updateQuestion(qIndex, 'options', [...question.options, newOption]);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="text-blue-400 border-blue-400/50 hover:bg-blue-400/10"
+                      >
+                        Add Item
+                      </Button>
+                    </div>
+
+                    {/* Correct Sequence Configuration */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-medium text-white/70">Correct Order *</label>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            // Shuffle the current sequence
+                            const shuffled = [...question.options].sort(() => Math.random() - 0.5);
+                            const shuffledIds = shuffled.map((_, idx) => idx.toString());
+                            updateQuestion(qIndex, 'correctSequence', shuffledIds);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="text-gray-400 border-gray-600 hover:bg-gray-700"
+                        >
+                          Shuffle
+                        </Button>
+                      </div>
+                      
+                      <div className="text-sm text-white/60 mb-3">
+                        Drag and drop to set the correct order, or manually arrange:
+                      </div>
+
+                      <div className="space-y-2 p-3 bg-gray-800/30 rounded-lg border border-gray-600">
+                        {question.options.map((option, idx) => (
+                          <div key={idx} className="flex items-center space-x-3 p-2 bg-gray-700 rounded border border-gray-600">
+                            <div className="flex-shrink-0 w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                              {idx + 1}
+                            </div>
+                            <div className="flex-1 text-white/90">{option.text || `Item ${idx + 1}`}</div>
+                            <div className="flex space-x-1">
+                              <Button
+                                type="button"
+                                onClick={() => {
+                                  if (idx > 0) {
+                                    const updatedOptions = [...question.options];
+                                    [updatedOptions[idx], updatedOptions[idx - 1]] = [updatedOptions[idx - 1], updatedOptions[idx]];
+                                    updateQuestion(qIndex, 'options', updatedOptions);
+                                  }
+                                }}
+                                disabled={idx === 0}
+                                variant="outline"
+                                size="sm"
+                                className="text-gray-400 border-gray-600 hover:bg-gray-600 disabled:opacity-50"
+                              >
+                                ↑
+                              </Button>
+                              <Button
+                                type="button"
+                                onClick={() => {
+                                  if (idx < question.options.length - 1) {
+                                    const updatedOptions = [...question.options];
+                                    [updatedOptions[idx], updatedOptions[idx + 1]] = [updatedOptions[idx + 1], updatedOptions[idx]];
+                                    updateQuestion(qIndex, 'options', updatedOptions);
+                                  }
+                                }}
+                                disabled={idx === question.options.length - 1}
+                                variant="outline"
+                                size="sm"
+                                className="text-gray-400 border-gray-600 hover:bg-gray-600 disabled:opacity-50"
+                              >
+                                ↓
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-gray-400 p-3 bg-gray-800/50 rounded-md">
+                      💡 <strong>Sequence Questions:</strong> Students will drag and drop items to arrange them in the correct order. 
+                      Perfect for timelines, processes, rankings, or step-by-step procedures.
                     </div>
                   </div>
                 )}
