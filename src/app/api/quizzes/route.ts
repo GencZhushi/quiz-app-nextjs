@@ -12,7 +12,7 @@ const OptionSchema = z.object({
 
 const QuestionSchema = z.object({
   text: z.string().min(1, 'Question text is required'),
-  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT', 'NUMERIC', 'SEQUENCE']),
+  type: z.enum(['SINGLE', 'MULTIPLE', 'TEXT', 'NUMERIC', 'SEQUENCE', 'RATING']),
   orderIndex: z.number().int().min(0),
   options: z.array(OptionSchema).optional(),
   // Numeric question fields
@@ -24,6 +24,11 @@ const QuestionSchema = z.object({
   tolerance: z.number().min(0).default(0).optional(),
   // Sequence question fields
   correctSequence: z.array(z.string()).optional(),
+  // Rating question fields
+  ratingMin: z.number().int().min(1).max(10).optional(),
+  ratingMax: z.number().int().min(2).max(10).optional(),
+  ratingLabels: z.array(z.string()).optional(),
+  ratingType: z.enum(['stars', 'numbers', 'emoji', 'likert']).optional(),
 });
 
 const QuizSchema = z.object({
@@ -121,6 +126,30 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+
+      // Additional validation for rating questions
+      if (question.type === 'RATING') {
+        if (question.ratingMin === undefined || question.ratingMax === undefined) {
+          return NextResponse.json(
+            { error: 'Rating questions must have minimum and maximum rating values' },
+            { status: 400 }
+          );
+        }
+
+        if (question.ratingMax <= question.ratingMin) {
+          return NextResponse.json(
+            { error: 'Maximum rating must be greater than minimum rating' },
+            { status: 400 }
+          );
+        }
+
+        if (question.ratingMin < 1 || question.ratingMax > 10) {
+          return NextResponse.json(
+            { error: 'Rating scale must be between 1 and 10' },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     // Create quiz with nested questions and options in a transaction
@@ -143,6 +172,11 @@ export async function POST(request: NextRequest) {
             tolerance: question.tolerance,
             // Sequence question fields
             correctSequence: question.correctSequence ? JSON.stringify(question.correctSequence) : null,
+            // Rating question fields
+            ratingMin: question.ratingMin,
+            ratingMax: question.ratingMax,
+            ratingLabels: question.ratingLabels ? JSON.stringify(question.ratingLabels) : null,
+            ratingType: question.ratingType,
             // Options for choice questions
             options: question.options ? {
               create: question.options.map(option => ({

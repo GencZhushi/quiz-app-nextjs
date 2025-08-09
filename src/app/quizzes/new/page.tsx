@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import NumericQuestionBuilder from '@/components/quiz-builder/NumericQuestionBuilder';
+import SequenceQuestionBuilder from '@/components/quiz-builder/SequenceQuestionBuilder';
+import RatingQuestionBuilder from '@/components/quiz-builder/RatingQuestionBuilder';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
-type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TEXT' | 'NUMERIC' | 'SEQUENCE';
+type QuestionType = 'SINGLE' | 'MULTIPLE' | 'TEXT' | 'NUMERIC' | 'SEQUENCE' | 'RATING';
 
 interface Option {
   text: string;
@@ -28,6 +31,11 @@ interface Question {
   tolerance?: number;
   // Sequence question fields
   correctSequence?: string[];
+  // Rating question fields
+  ratingMin?: number;
+  ratingMax?: number;
+  ratingLabels?: string[];
+  ratingType?: 'stars' | 'numbers' | 'emoji' | 'likert';
 }
 
 interface Quiz {
@@ -97,15 +105,21 @@ export default function NewQuizPage() {
               ];
             } else if (value === 'SEQUENCE' && q.type !== 'SEQUENCE') {
               updated.options = [
-                { text: '', isCorrect: false, orderIndex: 0 },
-                { text: '', isCorrect: false, orderIndex: 1 },
-                { text: '', isCorrect: false, orderIndex: 2 }
+                { text: 'First item', isCorrect: false, orderIndex: 0 },
+                { text: 'Second item', isCorrect: false, orderIndex: 1 },
               ];
-              updated.correctSequence = [];
+              updated.correctSequence = ['First item', 'Second item'];
+            } else if (value === 'RATING' && q.type !== 'RATING') {
+              updated.ratingMin = 1;
+              updated.ratingMax = 5;
+              updated.ratingType = 'stars';
+              updated.ratingLabels = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
             }
             
             // Set default numeric values when switching to NUMERIC
             if (value === 'NUMERIC') {
+              updated.minValue = 0;
+              updated.maxValue = 100;
               updated.decimalPlaces = 2;
               updated.tolerance = 0;
               updated.correctAnswer = 0;
@@ -368,6 +382,7 @@ export default function NewQuizPage() {
                     <option value="TEXT">Text Answer</option>
                     <option value="NUMERIC">Numeric Input</option>
                     <option value="SEQUENCE">Sequence Ordering</option>
+                    <option value="RATING">Rating Scale</option>
                   </select>
                 </div>
 
@@ -596,6 +611,23 @@ export default function NewQuizPage() {
                       Perfect for timelines, processes, rankings, or step-by-step procedures.
                     </div>
                   </div>
+                )}
+
+                {/* Rating question fields */}
+                {question.type === 'RATING' && (
+                  <RatingQuestionBuilder
+                    question={question as any}
+                    onChange={(updatedQuestion) => {
+                      setQuiz(prev => ({
+                        ...prev,
+                        questions: prev.questions.map((q, i) => 
+                          i === qIndex ? { ...q, ...updatedQuestion } : q
+                        )
+                      }));
+                    }}
+                    onRemove={() => removeQuestion(qIndex)}
+                    questionIndex={qIndex}
+                  />
                 )}
 
                 {/* Options for choice questions */}

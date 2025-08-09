@@ -56,6 +56,12 @@ model Question {
   
   // Sequence question fields
   correctSequence String?    @map("correct_sequence") // JSON array of option IDs in correct order
+  
+  // Rating question fields
+  ratingMin       Int?       @default(1) @map("rating_min")     // Minimum rating value
+  ratingMax       Int?       @default(5) @map("rating_max")     // Maximum rating value
+  ratingLabels    String?    @map("rating_labels")              // JSON array of custom labels
+  ratingType      String?    @default("stars") @map("rating_type") // Type: stars, numbers, emoji, etc.
 }
 
 model Option {
@@ -73,4 +79,5 @@ enum QuestionType {
   TEXT
   NUMERIC
   SEQUENCE
+  RATING
 }
