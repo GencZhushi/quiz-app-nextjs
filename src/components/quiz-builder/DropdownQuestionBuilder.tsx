@@ -34,7 +34,7 @@ export default function DropdownQuestionBuilder({
 }: DropdownQuestionBuilderProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const updateQuestion = (field: keyof DropdownQuestionData, value: string | boolean | Array<any>) => {
+  const updateQuestion = (field: keyof DropdownQuestionData, value: string | boolean | Array<{ text: string; isCorrect: boolean; orderIndex: number }>) => {
     const updatedQuestion = { ...question, [field]: value };
     
     // Clear related errors
@@ -125,6 +125,14 @@ export default function DropdownQuestionBuilder({
 
   // Validate question
   useEffect(() => {
+    const DROPDOWN_CONFIGS: Record<string, {
+    name: string;
+    description: string;
+    icon: string;
+    allowSearch: boolean;
+    showOptionNumbers: boolean;
+  }> = {};
+    
     const newErrors: Record<string, string> = {};
     
     if (!question.text.trim()) {
@@ -152,7 +160,6 @@ export default function DropdownQuestionBuilder({
 
   const renderPreview = () => {
     const placeholder = question.placeholder || 'Select an option...';
-    const correctOption = question.options.find(opt => opt.isCorrect);
     
     return (
       <div className="space-y-3">

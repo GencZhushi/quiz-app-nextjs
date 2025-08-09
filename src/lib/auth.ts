@@ -121,7 +121,7 @@ export async function userOwnsQuiz(userId: number, quizId: string): Promise<bool
     const quiz = await prisma.quiz.findFirst({
       where: {
         id: quizId,
-        user: { is: { id: userId } }
+        userId: userId
       }
     });
     

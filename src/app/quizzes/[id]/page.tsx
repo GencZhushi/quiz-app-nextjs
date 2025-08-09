@@ -417,7 +417,7 @@ export default function QuizDetailsPage() {
                     <div className="bg-green-900/20 border border-green-700/30 p-4 rounded-lg">
                       <div className="mb-3">
                         <span className="text-green-300 font-medium">Placeholder:</span>
-                        <span className="text-white/90 ml-2">"{question.placeholder || 'Select an option...'}"</span>
+                        <span className="text-white/90 ml-2">&quot;{question.placeholder || 'Select an option...'}&quot;</span>
                       </div>
                       <div className="flex gap-4 mb-3 text-sm">
                         <div className="flex items-center">
